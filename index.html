@@ -162,23 +162,10 @@
                 const validatedUrl = new URL(inputVal);
                 urlInput.classList.remove('error');
 
-                const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,toolbar=no,width=1280,height=720";
-                
-                // Открываем новое WebView-подобное окно
-                const newWindow = window.open(validatedUrl.href, '_blank', windowFeatures);
-
-                if (newWindow) {
-                    // Агрессивный хак для обхода защиты браузера и закрытия вкладки-открывашки
-                    window.open('', '_self', ''); 
-                    window.close();
-                    
-                    // Резервный вызов, если первый заблокирован политиками безопасности
-                    setTimeout(() => {
-                        window.location.href = "about:blank";
-                    }, 50);
-                } else {
-                    alert("Pop-up blocked! Please allow pop-ups for this site to launch WebView 2.");
-                }
+                // Перенаправляем текущее окно в режим App Mode для целевого сайта.
+                // Это сохраняет твой Google-аккаунт, убирает интерфейс браузера 
+                // и полностью решает проблему закрытия вкладки (она просто заменяется сайтом)!
+                window.location.href = "microsoft-edge:" + validatedUrl.href;
 
             } catch (e) {
                 triggerError();
