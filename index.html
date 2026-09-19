@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Webview Container</title>
+    <style>
+        :root {
+            --bg-color: #0f0f12;
+            --panel-color: #16161a;
+            --input-bg: #22222a;
+            --text-color: #f0f0f5;
+            --text-muted: #8a8a93;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --error-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation Bar */
+        .nav-bar {
+            background-color: var(--panel-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-bottom: 1px solid #27272a;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 14px 60px 14px 20px;
+            background-color: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 30px;
+            color: var(--text-color);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .url-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .url-input.error {
+            border-color: var(--error-color);
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Circular Action Button */
+        .go-btn {
+            position: absolute;
+            right: 6px;
+            width: 44px;
+            height: 44px;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .go-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .go-btn:active {
+            transform: scale(0.95);
+        }
+
+        .go-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Webview Viewport Frame */
+        .webview-container {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            background-color: var(--bg-color);
+        }
+
+        .webview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #ffffff; /* Default white background for loaded sites */
+            display: none;
+        }
+
+        /* Placeholder state before URL is loaded */
+        .placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-translate(-50%, -50%));
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+        }
+
+        .placeholder p {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="nav-bar">
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="urlInput" 
+                class="url-input" 
+                placeholder="Enter URL (e.g., mysite.com or https://...)"
+                autocomplete="off"
+                spellcheck="false"
+            >
+            <button id="goBtn" class="go-btn" title="Load URL">
+                <svg viewBox="0 0 24 24">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="webview-container">
+        <div id="placeholder" class="placeholder">
+            <div class="placeholder-icon">🌐</div>
+            <p>Enter a secure URL above and click the arrow to initialize the viewport session.</p>
+        </div>
+        <iframe id="webviewFrame" class="webview-frame" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
+    </main>
+
+    <script>
+        const urlInput = document.getElementById('urlInput');
+        const goBtn = document.getElementById('goBtn');
+        const webviewFrame = document.getElementById('webviewFrame');
+        const placeholder = document.getElementById('placeholder');
+
+        function loadUrl() {
+            let inputVal = urlInput.value.trim();
+            
+            if (!inputVal) {
+                triggerError();
+                return;
+            }
+
+            // Automatically prepend https:// if no protocol is explicitly written
+            if (!/^https?:\/\//i.test(inputVal)) {
+                inputVal = 'https://' + inputVal;
+            }
+
+            // Strict URL Validation Check
+            try {
+                const validatedUrl = new URL(inputVal);
+                
+                // Remove error styling if validation passes
+                urlInput.classList.remove('error');
+                
+                // Hide placeholder and reveal the iframe element
+                placeholder.style.display = 'none';
+                webviewFrame.style.display = 'block';
+                
+                // Assign validated source directly to iframe container
+                webviewFrame.src = validatedUrl.href;
+            } catch (e) {
+                triggerError();
+            }
+        }
+
+        function triggerError() {
+            urlInput.classList.add('error');
+            setTimeout(() => {
+                urlInput.classList.remove('error');
+            }, 400);
+        }
+
+        // Click Event listener
+        goBtn.addEventListener('click', loadUrl);
+
+        // Enter key listener
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadUrl();
+            }
+        });
+    </script>
+</body>
+</html>
