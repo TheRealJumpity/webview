@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebView Window Launcher</title>
+    <title>WebView 2 Launcher</title>
     <style>
         :root {
             --bg-color: #0f0f12;
@@ -45,9 +45,9 @@
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 24px;
             margin-bottom: 24px;
-            font-weight: 500;
+            font-weight: 600;
             letter-spacing: -0.5px;
         }
 
@@ -123,7 +123,7 @@
 <body>
 
     <div class="launcher-box">
-        <h1>Initialize WebView Instance</h1>
+        <h1>WebView 2</h1>
         <div class="input-container">
             <input 
                 type="text" 
@@ -154,7 +154,6 @@
                 return;
             }
 
-            // Дописываем протокол, если пользователь его забыл
             if (!/^https?:\/\//i.test(inputVal)) {
                 inputVal = 'https://' + inputVal;
             }
@@ -163,23 +162,22 @@
                 const validatedUrl = new URL(inputVal);
                 urlInput.classList.remove('error');
 
-                // Опции для открытия чистого окна без тулбаров браузёра (имитация WebView)
                 const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,toolbar=no,width=1280,height=720";
                 
-                // 1. Открываем новое "WebView" окно
+                // Открываем новое WebView-подобное окно
                 const newWindow = window.open(validatedUrl.href, '_blank', windowFeatures);
 
                 if (newWindow) {
-                    // 2. Сразу же закрываем текущую вкладку-открывашку
+                    // Агрессивный хак для обхода защиты браузера и закрытия вкладки-открывашки
+                    window.open('', '_self', ''); 
                     window.close();
                     
-                    // Бэкап на случай, если браузер блокирует обычный window.close()
+                    // Резервный вызов, если первый заблокирован политиками безопасности
                     setTimeout(() => {
-                        window.open('', '_self', '');
-                        window.close();
-                    }, 100);
+                        window.location.href = "about:blank";
+                    }, 50);
                 } else {
-                    alert("Pop-up blocked! Please allow pop-ups for this site to open the WebView window.");
+                    alert("Pop-up blocked! Please allow pop-ups for this site to launch WebView 2.");
                 }
 
             } catch (e) {
